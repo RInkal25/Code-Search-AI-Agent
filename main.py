@@ -1,5 +1,7 @@
 from git import Repo
 from pathlib import Path
+from splitter import chunk_code
+from vector_store import create_documents_from_chunks, store_in_vector_db
 import os
 
 def clone_repo(repo_url, save_path="cloned_repo"):
@@ -25,7 +27,24 @@ def read_python_files(repo_path):
 if __name__ == "__main__":
     repo_url = input("Enter the GitHub repo URL: ")
     repo_path = clone_repo(repo_url)
+
     code_files = read_python_files(repo_path)
-    print(f"Found {len(code_files)} Python files.")
+    print(f"\nFound {len(code_files)} Python files.")
+
+    code_chunks = chunk_code(code_files)
+    print(f"\nTotal chunks created: {len(code_chunks)}")
+
+    # Convert your code chunks to documents
+    docs = create_documents_from_chunks(code_chunks)
+
+    # Store documents in local vector DB
+    store_in_vector_db(docs)
+
+    # Preview original files
     for file in code_files[:3]:
         print(f"\n--- {file['file']} ---\n{file['content'][:300]}...\n")
+
+    # Preview chunked content
+    for chunk in code_chunks[:3]:
+        file_name = chunk['file'].split('/')[-1].split('\\')[-1]
+        print(f"\n--- {chunk['chunk_id']} from {file_name} ---\n{chunk['content'][:300]}...\n")
